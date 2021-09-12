@@ -37,9 +37,10 @@ class Move:
 
         done = False
         res = MoveServoResponse()
+        command = f"m {index} {angle:.0f} "
+        print(f"Sending '{command}'")
+        
         while not done:
-            command = f"m {index} {angle:.0f} "
-            print(f"Sending '{command}'")
             self.pi.serial_write(self.handle, command)
 
             time.sleep(0.05)

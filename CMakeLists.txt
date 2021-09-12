@@ -67,6 +67,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(move src/move.cpp)
+add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(move ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/bittleet.cpp
