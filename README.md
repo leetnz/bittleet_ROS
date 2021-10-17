@@ -28,6 +28,14 @@ Optionally:
 systemctl enable pigpiod # Always run
 ```
 
+We need `sensor_msgs`. Assuming we have installed noetic using https://varhowto.com/install-ros-noetic-raspberry-pi-4/, do the following:
+```sh
+rosinstall_generator sensor_msgs --rosdistro noetic --deps --wet-only --tar > indigo-sensor_msgs-wet.rosinstall
+wstool init src noetic-sensor_msgs-wet.rosinstall
+rosdep install -y --from-paths src --ignore-src --rosdistro noetic -r --os=debian:buster
+sudo src/catkin/bin/catkin_make_isolated --install -DCMAKE_BUILD_TYPE=Release --install-space /opt/ros/noetic -j1 -DPYTHON_EXECUTABLE=/usr/bin/python3
+```
+
 ## Build 
 
 After placing this package in your catkin workspace `src` folder:
