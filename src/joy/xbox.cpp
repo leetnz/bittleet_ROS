@@ -31,6 +31,13 @@ void XboxController::callback(const sensor_msgs::Joy::ConstPtr& msg) {
         }
     }
 
+    for (auto event: _analogEvents) {
+        if (_checkChanged(event.input, msg)) {
+            const int index = static_cast<int>(event.input);
+            event.callback(msg->axes[index]);
+        }
+    }
+
     _last = *msg;
 }
 
@@ -40,6 +47,10 @@ void XboxController::registerButtonPress(ButtonEvent event) {
 
 void XboxController::registerButtonRelease(ButtonEvent event) {
     _buttonReleaseEvents.push_back(event);
+}
+
+void XboxController::registerAnalog(AnalogEvent event) {
+    _analogEvents.push_back(event);
 }
 
 
@@ -63,4 +74,9 @@ bool XboxController::_checkReleased(Button button, const sensor_msgs::Joy::Const
 bool XboxController::_checkChanged(Button button, const sensor_msgs::Joy::ConstPtr& current) const {
     const int index = static_cast<int>(button);
     return (current->buttons[index] != _last.buttons[index]);
+}
+
+bool XboxController::_checkChanged(Analog input, const sensor_msgs::Joy::ConstPtr& current) const {
+    const int index = static_cast<int>(input);
+    return (current->axes[index] != _last.axes[index]);
 }

@@ -22,9 +22,11 @@ public:
     void callback(const sensor_msgs::Joy::ConstPtr& msg);
 
     struct ButtonEvent;
+    struct AnalogEvent;
 
     void registerButtonPress(ButtonEvent event);
     void registerButtonRelease(ButtonEvent event);
+    void registerAnalog(AnalogEvent event);
 
     enum class Button : int {
         A = 0, B, X, Y, 
@@ -39,6 +41,19 @@ public:
         Button button;
         std::function<void()> callback;
     };
+
+    enum class Analog : int {
+        LTOGGLE_LR = 0, LTOGGLE_UD, 
+        LTRIGGER, 
+        RTOGGLE_LR, RTOGGLE_UD,
+        RTRIGGER,
+        DPAD_LR, DPAD_UD 
+    };
+
+    struct AnalogEvent {
+        Analog input;
+        std::function<void(float)> callback;
+    };
     
 
 protected:
@@ -47,11 +62,13 @@ protected:
     bool _checkPressed(Button button, const sensor_msgs::Joy::ConstPtr& current) const;
     bool _checkReleased(Button button, const sensor_msgs::Joy::ConstPtr& current) const;
     bool _checkChanged(Button button, const sensor_msgs::Joy::ConstPtr& current) const;
+    bool _checkChanged(Analog input, const sensor_msgs::Joy::ConstPtr& current) const;
 
     sensor_msgs::Joy _last;
 
     std::vector<ButtonEvent> _buttonPressEvents;
     std::vector<ButtonEvent> _buttonReleaseEvents;
+    std::vector<AnalogEvent> _analogEvents;
 
     static constexpr size_t NUM_AXES = 8;
     static constexpr size_t NUM_BUTTONS = 15;

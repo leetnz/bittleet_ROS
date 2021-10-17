@@ -22,6 +22,15 @@ int main(int argc, char **argv)
         }  
     );
 
+    controller.registerAnalog(
+        XboxController::AnalogEvent{
+            .input = XboxController::Analog::LTRIGGER,
+            .callback = [](float value) -> void { 
+                ROS_INFO("Trigger: %f", value);
+            }
+        }  
+    );
+
     ros::init(argc, argv, "xbox_listener");
 
     ros::NodeHandle nh;
