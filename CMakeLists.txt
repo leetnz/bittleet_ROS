@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  sensor_msgs
   message_generation
 )
 
@@ -38,6 +39,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  sensor_msgs
 )
 
 ###################################
@@ -63,13 +65,21 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  # include
   ${catkin_INCLUDE_DIRS}
 )
+
+set(IO_LIBS "src/io/serial_port.cpp")
+set(JOY_LIBS "src/joy/xbox.cpp")
 
 add_executable(move src/move.cpp)
 add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(move ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+
+add_executable(xbox_listener src/xbox_listener.cpp ${IO_LIBS} ${JOY_LIBS})
+add_dependencies(xbox_listener ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(xbox_listener ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
