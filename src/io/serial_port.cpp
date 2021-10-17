@@ -18,7 +18,7 @@ SerialPort::SerialPort() {
     }
 
     char serialPort[11] = "/dev/ttyS0";
-    int _h = serial_open(_pi, serialPort, 115200, 0);
+    _h = serial_open(_pi, serialPort, 115200, 0);
     if (_h < 0) {
         ROS_ERROR("Serial port unavaliable");
         return;
