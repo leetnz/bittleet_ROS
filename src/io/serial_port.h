@@ -17,7 +17,7 @@ public:
     void shutdown();
 
     bool ready() const;
-    bool write(char* bytes, int len);
+    bool write(const char* bytes, int len);
     
 private:
     int _pi = -1;

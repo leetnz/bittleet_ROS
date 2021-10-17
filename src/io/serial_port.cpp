@@ -44,7 +44,9 @@ bool SerialPort::ready() const {
     return ((_h >= 0) && (_pi >= 0));
 }
 
-bool SerialPort::write(char* bytes, int len){
-    int result  = serial_write(_pi, _h, bytes, (unsigned)len);
+bool SerialPort::write(const char* bytes, int len){
+    char toWrite[len];
+    std::memcpy(toWrite, bytes, len);
+    int result  = serial_write(_pi, _h, toWrite, (unsigned)len);
     return (result == 0);
 }

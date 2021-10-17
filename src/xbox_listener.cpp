@@ -5,38 +5,54 @@
 #include "io/serial_port.h"
 #include "joy/xbox.h"
 
+static SerialPort serial;
+static XboxController controller;
+
+void at_signal(int i) {
+   serial.shutdown();
+   exit(0);
+}
+
 int main(int argc, char **argv)
 {
-    // SerialPort serial{};
-    // if (serial.ready() == false) {
-    //     return 1;
-    // }
+    if (serial.ready() == false) {
+        return 1;
+    }
 
-    XboxController controller{};
-    controller.registerButtonPress(
-        XboxController::ButtonEvent{
-            .button = XboxController::Button::X,
-            .callback = []() -> void { 
-                ROS_INFO("X Button Pressed");
-            }
-        }  
-    );
+    using ButtonMap = std::map<XboxController::Button, std::string>;
+    ButtonMap buttonMap = {
+        {XboxController::Button::X, "kh"},
+        {XboxController::Button::Y, "ks"},
+        {XboxController::Button::A, "ke"},
+        {XboxController::Button::B, "kT"},
+    };
+    
+    for (ButtonMap::const_reference& pair : buttonMap) {
+        controller.registerButtonPress(
+            XboxController::ButtonEvent{
+                .button = pair.first,
+                .callback = [pair]() -> void {
+                    ROS_INFO("Writing %s", pair.second.c_str());
+                    serial.write(pair.second.c_str(), pair.second.size());
+                }
+            }  
+        );
+    }
 
-    controller.registerAnalog(
-        XboxController::AnalogEvent{
-            .input = XboxController::Analog::LTRIGGER,
-            .callback = [](float value) -> void { 
-                ROS_INFO("Trigger: %f", value);
-            }
-        }  
-    );
+    // controller.registerAnalog(
+    //     XboxController::AnalogEvent{
+    //         .input = XboxController::Analog::LTRIGGER,
+    //         .callback = [](float value) -> void { 
+    //             ROS_INFO("Trigger: %f", value);
+    //         }
+    //     }  
+    // );
 
     ros::init(argc, argv, "xbox_listener");
 
     ros::NodeHandle nh;
     ros::Subscriber sub = nh.subscribe("joy", 10, &XboxController::callback, &controller);
 
-    
     ros::spin();
 
     return 0;
