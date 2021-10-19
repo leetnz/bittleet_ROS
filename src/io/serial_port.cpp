@@ -10,7 +10,7 @@
 #include "serial_port.h"
 #include <pigpiod_if2.h>
 
-SerialPort::SerialPort() {
+SerialPortPigpio::SerialPortPigpio() {
     _pi = pigpio_start("localhost", "8888");
     if (_pi < 0) {
         ROS_ERROR("Connecting to pigpiod failed");
@@ -25,11 +25,11 @@ SerialPort::SerialPort() {
     }
 }
 
-SerialPort::~SerialPort() {
+SerialPortPigpio::~SerialPortPigpio() {
     shutdown();
 }
 
-void SerialPort::shutdown() {
+void SerialPortPigpio::shutdown() {
     if (_h >= 0) {
         serial_close(_pi, _h);
     }
@@ -38,13 +38,13 @@ void SerialPort::shutdown() {
     }
     _h = -1;
     _pi = -1;
-    }
+}
 
-bool SerialPort::ready() const {
+bool SerialPortPigpio::ready() const {
     return ((_h >= 0) && (_pi >= 0));
 }
 
-bool SerialPort::write(const char* bytes, int len){
+bool SerialPortPigpio::write(const char* bytes, int len){
     char toWrite[len];
     std::memcpy(toWrite, bytes, len);
     int result  = serial_write(_pi, _h, toWrite, (unsigned)len);

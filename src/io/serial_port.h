@@ -11,8 +11,16 @@
 
 class SerialPort {
 public:
-    SerialPort();
-    ~SerialPort();
+    virtual void shutdown() = 0;
+
+    virtual bool ready() const = 0;
+    virtual bool write(const char* bytes, int len) = 0;
+};
+
+class SerialPortPigpio : public SerialPort {
+public:
+    SerialPortPigpio();
+    ~SerialPortPigpio();
 
     void shutdown();
 
@@ -22,6 +30,16 @@ public:
 private:
     int _pi = -1;
     int _h = -1;
+};
+
+class SerialPortFake : public SerialPort {
+public:
+    SerialPortFake() = default;
+
+    void shutdown() {}
+
+    bool ready() const { return true; }
+    bool write(const char* bytes, int len) { return true; }
 };
 
 #endif // _BITTLEET_ROS_SERIAL_PORT_H_

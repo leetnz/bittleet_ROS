@@ -5,7 +5,7 @@
 #include "io/serial_port.h"
 #include "joy/xbox.h"
 
-static SerialPort serial;
+static SerialPort* serial = new SerialPortPigpio();
 static XboxController controller;
 
 class MoveStateMachine {
@@ -20,7 +20,7 @@ class MoveStateMachine {
                 {
                     std::string cmd = _quadrantMap[current];
                     ROS_INFO("Writing %s", cmd.c_str());
-                    serial.write(cmd.c_str(), cmd.size());
+                    serial->write(cmd.c_str(), cmd.size());
                 }
             }
         }
@@ -34,7 +34,7 @@ class MoveStateMachine {
                 {
                     std::string cmd = _quadrantMap[current];
                     ROS_INFO("Writing %s", cmd.c_str());
-                    serial.write(cmd.c_str(), cmd.size());
+                    serial->write(cmd.c_str(), cmd.size());
                 }
             }
         }
@@ -91,13 +91,13 @@ class MoveStateMachine {
 };
 
 void at_signal(int i) {
-   serial.shutdown();
+   serial->shutdown();
    exit(0);
 }
 
 int main(int argc, char **argv)
 {
-    if (serial.ready() == false) {
+    if (serial->ready() == false) {
         return 1;
     }
 
@@ -107,6 +107,7 @@ int main(int argc, char **argv)
         {XboxController::Button::Y, "ks"},
         {XboxController::Button::A, "ke"},
         {XboxController::Button::B, "kT"},
+        {XboxController::Button::LTOGGLE, "kb"},
     };
     
     for (ButtonMap::const_reference& pair : buttonMap) {
@@ -115,7 +116,7 @@ int main(int argc, char **argv)
                 .button = pair.first,
                 .callback = [pair]() -> void {
                     ROS_INFO("Writing %s", pair.second.c_str());
-                    serial.write(pair.second.c_str(), pair.second.size());
+                    serial->write(pair.second.c_str(), pair.second.size());
                 }
             }  
         );
