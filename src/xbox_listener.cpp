@@ -108,6 +108,7 @@ int main(int argc, char **argv)
         {XboxController::Button::A, "ke"},
         {XboxController::Button::B, "kT"},
         {XboxController::Button::LTOGGLE, "kb"},
+        {XboxController::Button::RB, "g"}, // enable/disable gyro.
     };
     
     for (ButtonMap::const_reference& pair : buttonMap) {
