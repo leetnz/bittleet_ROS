@@ -98,6 +98,7 @@ void at_signal(int i) {
 int main(int argc, char **argv)
 {
     if (serial->ready() == false) {
+        ROS_ERROR("Failed to open serial port");
         return 1;
     }
 
