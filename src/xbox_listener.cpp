@@ -3,9 +3,9 @@
 #include "io/serial_port.h"
 #include "joy/xbox.h"
 #include "stream/stream.h"
-#include "std_msgs/Bool.h"
+#include "bittleet/Stream.h"
 
-static SerialPort* serial = new SerialPortPigpio();
+static SerialPort* serial = new SerialPortFake();
 static XboxController controller;
 static Stream* stream;
 
@@ -106,8 +106,22 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    Stream::mainInit(argc, argv);
+    ros::init(argc, argv, "xbox_listener");
 
+    // Argument handling
+    ros::NodeHandle ah("~");
+
+    std::string addr;
+    if (!ah.getParam("addr", addr)) {
+        ROS_ERROR("Requires param _addr. \n"
+            "e.g. `rosrun bittleet xbox_listener _addr:=192.168.0.7`");
+        return 1;
+    }
+
+    ROS_INFO("Set address to %s", addr.c_str());
+
+
+    Stream::mainInit(argc, argv);
 
     using ButtonMap = std::map<XboxController::Button, std::string>;
     ButtonMap buttonMap = {
@@ -176,22 +190,25 @@ int main(int argc, char **argv)
         }  
     );
 
-    ros::init(argc, argv, "xbox_listener");
+    
 
+    // Node things.
     ros::NodeHandle nh;
 
     ros::Subscriber sub = nh.subscribe("joy", 10, &XboxController::callback, &controller);
 
-    ros::Publisher active_pub = nh.advertise<std_msgs::Bool>("stream_active", 1);
+    ros::Publisher active_pub = nh.advertise<bittleet::Stream>("stream", 1);
 
     ros::Rate loop_rate(10);
 
+    bittleet::Stream msg;
+    msg.addr = addr;
+    msg.port = "5000";
+
     while (ros::ok())
     {
-        std_msgs::Bool msg;
-
-        msg.data = (stream != NULL);
-
+        msg.active = (stream != NULL);
+        
         active_pub.publish(msg);
 
         ros::spinOnce(); // Wait for any callbacks

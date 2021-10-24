@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Bool
+from bittleet.msg import Stream as StreamMsg
 
 import sys
 import gi
@@ -46,22 +46,21 @@ class Listener:
 
     def run(self):
         rospy.init_node('stream_client', anonymous=True)
-        rospy.Subscriber("stream_active", Bool, self.callback)
+        rospy.Subscriber("stream", StreamMsg, self.callback)
         rospy.spin()
 
-    def callback(self, streamActive):
+    def callback(self, stream):
         if not self.streamActive():
-            if streamActive.data:
-                rospy.loginfo("Starting stream")
-                # self.stream = Stream("v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink")
-                self.stream = Stream("tcpclientsrc host=127.0.0.1 port=5000 ! "
+            if stream.active:
+                rospy.loginfo(f"Starting stream at {stream.addr}:{stream.port}")
+                self.stream = Stream(f"tcpclientsrc host={stream.addr} port={stream.port} ! "
                                 "gdpdepay ! "
                                 "rtph264depay ! "
                                 "avdec_h264 ! "
                                 "videoconvert ! "
                                 "autovideosink sync=false")
         else:
-            if not streamActive.data:
+            if not stream.active:
                 rospy.loginfo("Closing stream")
                 self.closeStream()
 
