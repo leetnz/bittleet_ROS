@@ -61,29 +61,45 @@ catkin_package(
 ## Build ##
 ###########
 
+### GStreamer compile flags
+execute_process (
+    COMMAND bash -c "pkg-config --cflags-only-I gstreamer-1.0"
+    OUTPUT_VARIABLE GST_INCLUDES
+)
+string(REPLACE "\n" "" GST_INCLUDES ${GST_INCLUDES})
+string(REPLACE "-I" "" GST_INCLUDES ${GST_INCLUDES})
+string(REPLACE " " ";" GST_INCLUDES ${GST_INCLUDES})
+
+
+execute_process (
+    COMMAND bash -c "pkg-config --libs gstreamer-1.0"
+    OUTPUT_VARIABLE GST_LIBS
+)
+string(REPLACE "\n" "" GST_LIBS ${GST_LIBS})
+string(REPLACE " " ";" GST_LIBS ${GST_LIBS})
+
+### PIGPIO compile flags
+set(PIGPIO_LIBS "-lpigpiod_if2;-lrt")
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
   # include
   ${catkin_INCLUDE_DIRS}
-  # GStreamer includes provided by `pkg-config --libs gstreamer-1.0`
-  /usr/include/gstreamer-1.0 
-  /usr/include/glib-2.0 
-  /usr/lib/x86_64-linux-gnu/glib-2.0/include
+  ${GST_INCLUDES}
 )
 
 set(IO_LIBS "src/io/serial_port.cpp")
 set(JOY_LIBS "src/joy/xbox.cpp")
 set(STREAM_LIBS "src/stream/stream.cpp")
 
-# add_executable(move src/move.cpp)
-# add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(move ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+add_executable(move src/move.cpp)
+add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(move ${catkin_LIBRARIES} -pthread ${PIGPIO_LIBS})
 
 add_executable(xbox_listener src/xbox_listener.cpp ${IO_LIBS} ${JOY_LIBS} ${STREAM_LIBS})
 add_dependencies(xbox_listener ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(xbox_listener ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
-target_link_libraries(xbox_listener -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0) # Run `pkg-config --libs gstreamer-1.0` if these don't work
+target_link_libraries(xbox_listener ${catkin_LIBRARIES} -pthread ${PIGPIO_LIBS} ${GST_LIBS})
 
 
 ## Declare a C++ library
