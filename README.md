@@ -67,6 +67,7 @@ To set this up:
 * The host PC has the `joy` library installed:
     * `sudo apt-get install ros-noetic-joy`
 * The host PC has `gstreamer1.0` installed (see [hoani.net - GStreamer Setup](https://hoani.net/posts/guides/2021-10-21-gstreamerSetup/))
+* The host PC has `pigpio` installed (see [pigpio download and install](http://abyz.me.uk/rpi/pigpio/download.html))
 * This library has been built and sourced on the host PC
 * We have an xbox controller plugged into the host PC
 * The Bittle RPi is configured with `ROS_HOSTNAME` and `ROS_MASTER_URI` to point to the PC
