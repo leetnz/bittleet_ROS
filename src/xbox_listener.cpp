@@ -5,7 +5,7 @@
 #include "stream/stream.h"
 #include "bittleet/Stream.h"
 
-static SerialPort* serial = new SerialPortFake();
+static SerialPort* serial = new SerialPortPigpio();
 static XboxController controller;
 static Stream* stream;
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         msg.active = (stream != NULL);
-        
+
         active_pub.publish(msg);
 
         ros::spinOnce(); // Wait for any callbacks
