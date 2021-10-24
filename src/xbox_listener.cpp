@@ -1,12 +1,13 @@
 #include <functional>
 #include <ros/ros.h>
-#include <sensor_msgs/Joy.h>
-#include <pigpiod_if2.h>
 #include "io/serial_port.h"
 #include "joy/xbox.h"
+#include "stream/stream.h"
+#include "std_msgs/Bool.h"
 
 static SerialPort* serial = new SerialPortPigpio();
 static XboxController controller;
+static Stream* stream;
 
 class MoveStateMachine {
     public:
@@ -91,8 +92,11 @@ class MoveStateMachine {
 };
 
 void at_signal(int i) {
-   serial->shutdown();
-   exit(0);
+    serial->shutdown();
+    if (stream != NULL) {
+        stream->shutdown();
+    }
+    exit(0);
 }
 
 int main(int argc, char **argv)
@@ -101,6 +105,9 @@ int main(int argc, char **argv)
         ROS_ERROR("Failed to open serial port");
         return 1;
     }
+
+    Stream::mainInit(argc, argv);
+
 
     using ButtonMap = std::map<XboxController::Button, std::string>;
     ButtonMap buttonMap = {
@@ -123,6 +130,30 @@ int main(int argc, char **argv)
             }  
         );
     }
+
+    controller.registerButtonPress(
+        XboxController::ButtonEvent{
+            .button = XboxController::Button::LB,
+            .callback = []() -> void {
+                if (stream == NULL) {
+                    ROS_INFO("Starting Video Stream");
+                    // stream = new Stream("videotestsrc pattern=ball ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink");
+                    // stream = new Stream("gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink");
+                    stream = new Stream("gst-launch-1.0 v4l2src device=/dev/video0 ! "
+                        "video/x-h264,width=640,height=480,framerate=30/1 ! "
+                        "h264parse ! "
+                        "rtph264pay config-interval=1 pt=96 ! "
+                        "gdppay ! "
+                        "tcpserversink host=127.0.0.1 port=5000");
+                } else {
+                    ROS_INFO("Stopping Video Stream");
+                    stream->shutdown();
+                    delete stream;
+                    stream = NULL;
+                }
+            }
+        }  
+    );
 
     MoveStateMachine move{};
     
@@ -148,9 +179,24 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "xbox_listener");
 
     ros::NodeHandle nh;
+
     ros::Subscriber sub = nh.subscribe("joy", 10, &XboxController::callback, &controller);
 
-    ros::spin();
+    ros::Publisher active_pub = nh.advertise<std_msgs::Bool>("stream_active", 1);
+
+    ros::Rate loop_rate(10);
+
+    while (ros::ok())
+    {
+        std_msgs::Bool msg;
+
+        msg.data = (stream != NULL);
+
+        active_pub.publish(msg);
+
+        ros::spinOnce(); // Wait for any callbacks
+        loop_rate.sleep();
+    }
 
     return 0;
 }

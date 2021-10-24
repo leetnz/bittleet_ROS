@@ -67,18 +67,24 @@ catkin_package(
 include_directories(
   # include
   ${catkin_INCLUDE_DIRS}
+  # GStreamer includes provided by `pkg-config --libs gstreamer-1.0`
+  /usr/include/gstreamer-1.0 
+  /usr/include/glib-2.0 
+  /usr/lib/x86_64-linux-gnu/glib-2.0/include
 )
 
 set(IO_LIBS "src/io/serial_port.cpp")
 set(JOY_LIBS "src/joy/xbox.cpp")
+set(STREAM_LIBS "src/stream/stream.cpp")
 
-add_executable(move src/move.cpp)
-add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(move ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+# add_executable(move src/move.cpp)
+# add_dependencies(move ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(move ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
 
-add_executable(xbox_listener src/xbox_listener.cpp ${IO_LIBS} ${JOY_LIBS})
+add_executable(xbox_listener src/xbox_listener.cpp ${IO_LIBS} ${JOY_LIBS} ${STREAM_LIBS})
 add_dependencies(xbox_listener ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(xbox_listener ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthread)
+target_link_libraries(xbox_listener -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0) # Run `pkg-config --libs gstreamer-1.0` if these don't work
 
 
 ## Declare a C++ library
@@ -122,6 +128,7 @@ target_link_libraries(xbox_listener ${catkin_LIBRARIES} -lpigpiod_if2 -lrt -pthr
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/move.py
+  scripts/stream_client.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
