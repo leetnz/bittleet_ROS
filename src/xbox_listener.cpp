@@ -1,11 +1,14 @@
 #include <functional>
 #include <ros/ros.h>
+#include <csignal>
+#include <sstream>
+
 #include "io/serial_port.h"
 #include "joy/xbox.h"
 #include "stream/stream.h"
 #include "bittleet/Stream.h"
 
-static SerialPort* serial = new SerialPortPigpio();
+static SerialPort* serial;
 static XboxController controller;
 static Stream* stream;
 
@@ -91,8 +94,52 @@ class MoveStateMachine {
         }
 };
 
-void at_signal(int i) {
-    serial->shutdown();
+struct Config {
+    std::string addr;
+    bool debug;
+    bool h264Cam;
+};
+
+bool processArguments(ros::NodeHandle& handle, Config& config) {
+    config = Config{
+        .addr = "",
+        .debug = false,
+        .h264Cam = true,
+    };
+
+    if (!handle.getParam("addr", config.addr)) {
+        ROS_ERROR("Requires param _addr. \n"
+            "e.g. `rosrun bittleet xbox_listener _addr:=192.168.0.7`");
+        return false;
+    }
+
+    ROS_INFO("Set address to %s", config.addr.c_str());
+
+    handle.getParam("debug", config.debug);
+    handle.getParam("h264", config.h264Cam);
+    return true;
+}
+
+std::string constructStream(const Config& config){
+    std::stringstream ss;
+    if (config.h264Cam) {
+        ss << "uvch264src iframe-period=1000 device=/dev/video0";
+    } else {
+        ss << "v4l2src device=/dev/video0";
+    }
+    ss << " ! video/x-h264,width=640,height=480,framerate=30/1,profile=baseline";
+    ss << " ! h264parse";
+    ss << " ! rtph264pay config-interval=-1 pt=96";
+    ss << " ! gdppay";
+    ss << " ! tcpserversink host=0.0.0.0 port=5000";
+
+    return ss.str();
+}
+
+void atSignal(int i) {
+    if (serial != NULL) {
+        serial->shutdown();
+    }
     if (stream != NULL) {
         stream->shutdown();
     }
@@ -101,24 +148,27 @@ void at_signal(int i) {
 
 int main(int argc, char **argv)
 {
+    std::signal(SIGINT, atSignal);
+
+    ros::init(argc, argv, "xbox_listener");
+    ros::NodeHandle localHandle("~");
+    ros::NodeHandle globalHandle;
+
+    Config config;
+    if (processArguments(localHandle, config) == false) {
+        return 1;
+    }
+
+    if (config.debug) {
+        serial = new SerialPortFake();
+    } else {
+        serial = new SerialPortPigpio();
+    }
+
     if (serial->ready() == false) {
         ROS_ERROR("Failed to open serial port");
         return 1;
     }
-
-    ros::init(argc, argv, "xbox_listener");
-
-    // Argument handling
-    ros::NodeHandle ah("~");
-
-    std::string addr;
-    if (!ah.getParam("addr", addr)) {
-        ROS_ERROR("Requires param _addr. \n"
-            "e.g. `rosrun bittleet xbox_listener _addr:=192.168.0.7`");
-        return 1;
-    }
-
-    ROS_INFO("Set address to %s", addr.c_str());
 
 
     Stream::mainInit(argc, argv);
@@ -148,17 +198,10 @@ int main(int argc, char **argv)
     controller.registerButtonPress(
         XboxController::ButtonEvent{
             .button = XboxController::Button::LB,
-            .callback = []() -> void {
+            .callback = [&config]() -> void {
                 if (stream == NULL) {
                     ROS_INFO("Starting Video Stream");
-                    // stream = new Stream("videotestsrc pattern=ball ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink");
-                    // stream = new Stream("gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink");
-                    stream = new Stream("gst-launch-1.0 v4l2src device=/dev/video0 ! "
-                        "video/x-h264,width=640,height=480,framerate=30/1 ! "
-                        "h264parse ! "
-                        "rtph264pay config-interval=1 pt=96 ! "
-                        "gdppay ! "
-                        "tcpserversink host=127.0.0.1 port=5000");
+                    stream = new Stream(constructStream(config));
                 } else {
                     ROS_INFO("Stopping Video Stream");
                     stream->shutdown();
@@ -192,17 +235,15 @@ int main(int argc, char **argv)
 
     
 
-    // Node things.
-    ros::NodeHandle nh;
 
-    ros::Subscriber sub = nh.subscribe("joy", 10, &XboxController::callback, &controller);
+    ros::Subscriber sub = globalHandle.subscribe("joy", 10, &XboxController::callback, &controller);
 
-    ros::Publisher active_pub = nh.advertise<bittleet::Stream>("stream", 1);
+    ros::Publisher active_pub = globalHandle.advertise<bittleet::Stream>("stream", 1);
 
     ros::Rate loop_rate(10);
 
     bittleet::Stream msg;
-    msg.addr = addr;
+    msg.addr = config.addr;
     msg.port = "5000";
 
     while (ros::ok())
@@ -210,6 +251,15 @@ int main(int argc, char **argv)
         msg.active = (stream != NULL);
 
         active_pub.publish(msg);
+
+        if (stream != NULL) {
+            if (stream->isRunning() == false) {
+                ROS_WARN("Unexpected end of stream");
+                stream->shutdown();
+                delete stream;
+                stream = NULL;
+            }
+        }
 
         ros::spinOnce(); // Wait for any callbacks
         loop_rate.sleep();
