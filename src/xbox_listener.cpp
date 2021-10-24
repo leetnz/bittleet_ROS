@@ -180,6 +180,7 @@ int main(int argc, char **argv)
         {XboxController::Button::A, "ke"},
         {XboxController::Button::B, "kT"},
         {XboxController::Button::LTOGGLE, "kb"},
+        {XboxController::Button::START, "d"},
         {XboxController::Button::RB, "g"}, // enable/disable gyro.
     };
     
@@ -232,9 +233,6 @@ int main(int argc, char **argv)
             }
         }  
     );
-
-    
-
 
     ros::Subscriber sub = globalHandle.subscribe("joy", 10, &XboxController::callback, &controller);
 
