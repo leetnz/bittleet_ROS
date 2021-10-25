@@ -97,14 +97,14 @@ class MoveStateMachine {
 struct Config {
     std::string addr;
     bool debug;
-    bool h264Cam;
+    bool picam;
 };
 
 bool processArguments(ros::NodeHandle& handle, Config& config) {
     config = Config{
         .addr = "",
         .debug = false,
-        .h264Cam = true,
+        .picam = true,
     };
 
     if (!handle.getParam("addr", config.addr)) {
@@ -116,22 +116,26 @@ bool processArguments(ros::NodeHandle& handle, Config& config) {
     ROS_INFO("Set address to %s", config.addr.c_str());
 
     handle.getParam("debug", config.debug);
-    handle.getParam("h264", config.h264Cam);
+    handle.getParam("picam", config.picam);
     return true;
 }
 
 std::string constructStream(const Config& config){
     std::stringstream ss;
-    if (config.h264Cam) {
-        ss << "uvch264src iframe-period=1000 device=/dev/video0";
+    if (config.picam) {
+        // Ref. https://gstreamer.freedesktop.org/documentation/rpicamsrc/index.html?gi-language=c#rpicamsrc-page
+        ss << "rpicamsrc"
+            << " sensor-mode=4"         // best wide angle
+            << " keyframe-interval=1"   // each frame is a keyframe, ensures streamed video is clear 
+            << " preview-opacity=50";  // For debugging, don't let preview cloak the console
     } else {
-        ss << "v4l2src device=/dev/video0";
+        ss << "v4l2src device=/dev/video0"
+            << " ! video/x-h264,width=640,height=480,framerate=60/1";
     }
-    ss << " ! video/x-h264,width=640,height=480,framerate=30/1,profile=baseline";
-    ss << " ! h264parse";
-    ss << " ! rtph264pay config-interval=-1 pt=96";
-    ss << " ! gdppay";
-    ss << " ! tcpserversink host=0.0.0.0 port=5000";
+    ss << " ! h264parse"
+        << " ! rtph264pay config-interval=-1 pt=96"
+        << " ! gdppay"
+        << " ! tcpserversink host=0.0.0.0 port=5000";
 
     return ss.str();
 }
