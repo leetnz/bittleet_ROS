@@ -1,11 +1,12 @@
 # ROS Bittleet
 
-Control [Petoi's Bittle](https://www.petoi.com/bittle) via Raspberry Pi. 
-
-It is a work in progress. 
+Control [Petoi's Bittle](https://www.petoi.com/bittle) via Raspberry Pi. Features:
+* Teleop with xbox controller
+* Video streaming
 
 Useful links:
-* [OpenCat Serial Protocol](https://bittle.petoi.com/4-configuration#4-3-arduino-ide-as-an-interface)
+* [Bittleet Serial Protocol](https://github.com/leetnz/Bittleet/wiki/Bittleet-Communication-Protocol)
+* [Bittleet Firmware](https://github.com/leetnz/Bittleet)
 
 ## Dependencies
 
