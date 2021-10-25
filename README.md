@@ -46,6 +46,25 @@ GStreamer is used to stream video from Bittle to a ground station running `strea
 
 Follow the instructions on [hoani.net - GStreamer Setup](https://hoani.net/posts/guides/2021-10-21-gstreamerSetup/)
 
+#### rpicamsrc
+
+This is optional, but this GStreamer module gives much better control over the raspberry pi camera, resulting in much better streaming.
+
+Firstly, install dependencies:
+```
+sudo apt-get install autoconf automake libtool pkg-config libgstreamer1.0-dev \
+libgstreamer-plugins-base1.0-dev libraspberrypi-dev
+```
+
+Then clone and install the library from source.
+```
+git clone https://github.com/thaytan/gst-rpicamsrc
+cd gst-rpicamsrc
+./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
+make
+sudo make install
+```
+
 ## Host PC Configuration
 
 This package is designed to be used with a host PC which:
@@ -112,10 +131,8 @@ If all goes well, we should be able to control bittle remotely using the xbox co
 
 To run `xbox_listener` on the host PC without a Raspberry Pi:
 ```
-rosrun bittleet xbox_listener _addr:=$(hostname) _debug:=true _h264:=false
+rosrun bittleet xbox_listener _addr:=$(hostname) _debug:=true _picam:=false
 ```
-
-If your host PC camera is an `H264` camera, you can set `h264:=true`
 
 #### Troubleshooting
 
