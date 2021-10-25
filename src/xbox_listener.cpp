@@ -130,7 +130,7 @@ std::string constructStream(const Config& config){
             << " preview-opacity=50";  // For debugging, don't let preview cloak the console
     } else {
         ss << "v4l2src device=/dev/video0"
-            << " ! video/x-h264,width=640,height=480,framerate=60/1";
+            << " ! video/x-h264,width=640,height=480,framerate=30/1";
     }
     ss << " ! h264parse"
         << " ! rtph264pay config-interval=-1 pt=96"
